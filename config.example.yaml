@@ -35,7 +35,9 @@ tools:
     - getIssueLinkTypes
     - createIssueLink
     # Project & type metadata
-    - getVisibleJiraProjects
+    # NOTE: getVisibleJiraProjects dropped — returns 1k+ projects on large
+    # instances (e.g. Red Hat), paginated at 50. Unusable for discovery.
+    # The caller always knows the project key.
     - getJiraProjectIssueTypesMetadata
     - getJiraIssueTypeMetaWithFields
     # Users
@@ -44,6 +46,7 @@ tools:
     - fetch
 
   overrides:
+    # --- Description overrides (shorten verbose upstream descriptions) ---
     getAccessibleAtlassianResources:
       description: "Get cloudId for API calls. Try site hostname (e.g. site.atlassian.net) as cloudId first."
     search:
@@ -54,6 +57,48 @@ tools:
       description: "Link two Jira issues. inwardIssue = blocker, outwardIssue = blocked."
     fetch:
       description: "Get Jira issue or Confluence page details by ARI."
-    # Strip unused parameters to save tokens
+
+    # --- Parameter overrides (strip optional params to save tokens) ---
+    addCommentToJiraIssue:
+      disabled_parameters:
+        # commentVisibility: restricts who can see the comment (by group/role).
+        # Comments via Claude are always public to project members.
+        - commentVisibility
+    createJiraIssue:
+      disabled_parameters:
+        # transition: applies a workflow transition during creation (e.g. create
+        # directly in "In Progress"). Niche — create then transition separately.
+        - transition
+    getJiraIssue:
+      disabled_parameters:
+        # failFast: undocumented boolean, no known effect via MCP.
+        - failFast
+        # properties: entity properties (app-level metadata). Not relevant for
+        # human-facing issue reads.
+        - properties
+        # updateHistory: controls whether the API call updates the user's
+        # "recently viewed" list. Irrelevant for programmatic access.
+        - updateHistory
+    getTransitionsForJiraIssue:
+      disabled_parameters:
+        # expand: adds transition conditions/validators detail. Not needed —
+        # you just want the list of IDs and names to pick from.
+        - expand
+        # transitionId: filters to a single transition. Claude can read the
+        # full list (usually <10 items) and pick.
+        - transitionId
+        # includeUnavailableTransitions: includes transitions that can't be
+        # performed. You only want the ones you can actually use.
+        - includeUnavailableTransitions
+        # skipRemoteOnlyCondition: Jira Service Management option, irrelevant.
+        - skipRemoteOnlyCondition
+        # sortByOpsBarAndStatus: UI sorting preference, irrelevant for API use.
+        - sortByOpsBarAndStatus
     transitionJiraIssue:
-      disabled_parameters: [historyMetadata]
+      disabled_parameters:
+        # historyMetadata: attaches metadata to the transition history entry.
+        # Never needed.
+        - historyMetadata
+        # update: allows field updates and comments during the transition.
+        # Redundant — use editJiraIssue and addCommentToJiraIssue instead.
+        - update

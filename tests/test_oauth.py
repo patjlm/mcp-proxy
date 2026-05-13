@@ -1,4 +1,6 @@
+import json
 import stat
+import time
 
 from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
 
@@ -64,3 +66,50 @@ async def test_file_permissions(tmp_path):
     await storage.set_tokens(OAuthToken(access_token="x", token_type="bearer"))
     mode = path.stat().st_mode & 0o777
     assert mode == 0o600
+
+
+async def test_set_tokens_persists_expires_at(tmp_path):
+    path = tmp_path / "tokens.json"
+    storage = FileTokenStorage(path)
+    await storage.set_tokens(
+        OAuthToken(access_token="a", token_type="bearer", expires_in=3600)
+    )
+    data = json.loads(path.read_text())
+    assert "expires_at" in data
+    assert data["expires_at"] > time.time()
+
+
+async def test_get_tokens_adjusts_expires_in(tmp_path):
+    path = tmp_path / "tokens.json"
+    storage = FileTokenStorage(path)
+    await storage.set_tokens(
+        OAuthToken(access_token="a", token_type="bearer", expires_in=3600)
+    )
+    result = await storage.get_tokens()
+    assert result.expires_in <= 3600
+    assert result.expires_in > 3500
+
+
+async def test_get_tokens_expired_sets_zero(tmp_path):
+    path = tmp_path / "tokens.json"
+    storage = FileTokenStorage(path)
+    await storage.set_tokens(
+        OAuthToken(access_token="a", token_type="bearer", expires_in=3600)
+    )
+    data = json.loads(path.read_text())
+    data["expires_at"] = time.time() - 100
+    path.write_text(json.dumps(data))
+    result = await storage.get_tokens()
+    assert result.expires_in == 0
+
+
+async def test_get_tokens_no_expires_in(tmp_path):
+    path = tmp_path / "tokens.json"
+    storage = FileTokenStorage(path)
+    await storage.set_tokens(
+        OAuthToken(access_token="a", token_type="bearer")
+    )
+    data = json.loads(path.read_text())
+    assert "expires_at" not in data
+    result = await storage.get_tokens()
+    assert result.expires_in is None

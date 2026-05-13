@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 import webbrowser
 from asyncio import Event, get_event_loop
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -19,7 +20,16 @@ CALLBACK_PATH = "/oauth/callback"
 
 
 class FileTokenStorage:
-    """Persists OAuth tokens and client info to a JSON file on disk."""
+    """Persists OAuth tokens and client info to a JSON file on disk.
+
+    Works around a bug in the MCP SDK where loading cached tokens doesn't
+    restore the expiry clock. The SDK stores expires_in (a relative TTL) but
+    never converts it to an absolute time on reload, so it treats expired
+    tokens as valid, sends them, gets a 401, and triggers a full browser
+    re-auth instead of silently refreshing. We persist expires_at (absolute
+    timestamp) alongside the token and recompute expires_in on load so the
+    SDK's expiry check works correctly across restarts.
+    """
 
     def __init__(self, path: Path) -> None:
         self._path = path
@@ -37,13 +47,20 @@ class FileTokenStorage:
     async def get_tokens(self) -> OAuthToken | None:
         data = self._read()
         raw = data.get("tokens")
-        if raw:
-            return OAuthToken.model_validate(raw)
-        return None
+        if not raw:
+            return None
+        token = OAuthToken.model_validate(raw)
+        expires_at = data.get("expires_at")
+        if expires_at is not None and token.expires_in is not None:
+            remaining = int(expires_at - time.time())
+            token = token.model_copy(update={"expires_in": max(0, remaining)})
+        return token
 
     async def set_tokens(self, tokens: OAuthToken) -> None:
         data = self._read()
         data["tokens"] = tokens.model_dump(mode="json")
+        if tokens.expires_in is not None:
+            data["expires_at"] = time.time() + tokens.expires_in
         self._write(data)
 
     async def get_client_info(self) -> OAuthClientInformationFull | None:
