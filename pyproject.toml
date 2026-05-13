@@ -1,0 +1,20 @@
+[project]
+name = "mcp-proxy-filter"
+version = "0.1.0"
+description = "MCP proxy that filters tools from upstream MCP servers"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.0",
+    "httpx",
+    "pyyaml",
+]
+
+[project.scripts]
+mcp-proxy = "mcp_proxy.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mcp_proxy"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

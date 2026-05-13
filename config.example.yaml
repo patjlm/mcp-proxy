@@ -1,0 +1,56 @@
+# MCP Proxy Filter — Atlassian Rovo (Jira-only)
+#
+# In ~/.claude.json, replace the atlassian-rovo entry with:
+#
+#   "atlassian-rovo": {
+#     "type": "stdio",
+#     "command": "uv",
+#     "args": ["run", "--directory", "/path/to/mcp-proxy", "mcp-proxy"],
+#     "env": {
+#       "MCP_PROXY_CONFIG": "/path/to/config.yaml"
+#     }
+#   }
+
+upstream:
+  type: http
+  url: https://mcp.atlassian.com/v1/mcp/authv2
+
+tools:
+  whitelist:
+    # Identity & discovery
+    - atlassianUserInfo
+    - getAccessibleAtlassianResources
+    # Search
+    - search
+    - searchJiraIssuesUsingJql
+    # Issues CRUD
+    - getJiraIssue
+    - createJiraIssue
+    - editJiraIssue
+    - addCommentToJiraIssue
+    # Transitions
+    - getTransitionsForJiraIssue
+    - transitionJiraIssue
+    # Issue links
+    - getIssueLinkTypes
+    - createIssueLink
+    # Project & type metadata
+    - getVisibleJiraProjects
+    - getJiraProjectIssueTypesMetadata
+    - getJiraIssueTypeMetaWithFields
+    # Users
+    - lookupJiraAccountId
+    # ARI fetch (works for Jira and Confluence)
+    - fetch
+
+  overrides:
+    getAccessibleAtlassianResources:
+      description: "Get cloudId for API calls. Try site hostname (e.g. site.atlassian.net) as cloudId first."
+    search:
+      description: "Search Jira and Confluence via Rovo. Use searchJiraIssuesUsingJql for JQL queries."
+    getIssueLinkTypes:
+      description: "List available issue link types (Blocks, Duplicate, Clones, Relates)."
+    createIssueLink:
+      description: "Link two Jira issues. inwardIssue = blocker, outwardIssue = blocked."
+    fetch:
+      description: "Get Jira issue or Confluence page details by ARI."
