@@ -1,11 +1,24 @@
 # MCP Proxy Filter — Atlassian Rovo (Jira-only)
 #
-# In ~/.claude.json, replace the atlassian-rovo entry with:
+# In ~/.claude.json, replace the atlassian-rovo entry with one of:
 #
-#   "atlassian-rovo": {
+# Run from GitHub (no clone needed):
+#
+#   "atlassian-proxy": {
 #     "type": "stdio",
 #     "command": "uvx",
 #     "args": ["--from", "git+https://github.com/patjlm/mcp-proxy", "mcp-proxy"],
+#     "env": {
+#       "MCP_PROXY_CONFIG": "/path/to/config.yaml"
+#     }
+#   }
+#
+# Run from a local checkout (picks up uncommitted changes):
+#
+#   "atlassian-proxy": {
+#     "type": "stdio",
+#     "command": "uv",
+#     "args": ["run", "--project", "/path/to/mcp-proxy", "mcp-proxy"],
 #     "env": {
 #       "MCP_PROXY_CONFIG": "/path/to/config.yaml"
 #     }
