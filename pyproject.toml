@@ -9,11 +9,18 @@ dependencies = [
     "pyyaml",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio"]
+
 [project.scripts]
 mcp-proxy = "mcp_proxy.main:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["mcp_proxy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
 
 [build-system]
 requires = ["hatchling"]
