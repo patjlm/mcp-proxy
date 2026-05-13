@@ -4,8 +4,8 @@
 #
 #   "atlassian-rovo": {
 #     "type": "stdio",
-#     "command": "uv",
-#     "args": ["run", "--directory", "/path/to/mcp-proxy", "mcp-proxy"],
+#     "command": "uvx",
+#     "args": ["--from", "git+https://github.com/patjlm/mcp-proxy", "mcp-proxy"],
 #     "env": {
 #       "MCP_PROXY_CONFIG": "/path/to/config.yaml"
 #     }

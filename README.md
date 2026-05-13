@@ -8,12 +8,19 @@ MCP servers like Atlassian Rovo expose 39+ tools (~12k tokens). Most sessions on
 
 ## Install
 
-Requires Python 3.10+ and [uv](https://docs.astral.sh/uv/).
+Requires Python 3.10+ and [uv](https://docs.astral.sh/uv/). No clone needed — `uvx` fetches and caches the tool automatically:
+
+```bash
+uvx --from git+https://github.com/patjlm/mcp-proxy mcp-proxy
+```
+
+For development, clone and use `uv run`:
 
 ```bash
 git clone https://github.com/patjlm/mcp-proxy.git
 cd mcp-proxy
 uv sync
+uv run mcp-proxy
 ```
 
 ## Configuration
@@ -81,8 +88,8 @@ In `~/.claude.json`:
   "mcpServers": {
     "atlassian-proxy": {
       "type": "stdio",
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/mcp-proxy", "mcp-proxy"],
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/patjlm/mcp-proxy", "mcp-proxy"],
       "env": {
         "MCP_PROXY_CONFIG": "/path/to/config.yaml"
       }
