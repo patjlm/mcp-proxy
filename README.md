@@ -60,6 +60,18 @@ overrides:
     description: "Shorter description"
 ```
 
+### Parameter stripping
+
+Remove optional parameters from tool schemas to save additional tokens:
+
+```yaml
+overrides:
+  transitionJiraIssue:
+    disabled_parameters: [historyMetadata]
+```
+
+Required parameters are never removed (a warning is logged instead). You can combine `description` and `disabled_parameters` on the same tool.
+
 ## Usage with Claude Code
 
 In `~/.claude.json`:
@@ -90,5 +102,5 @@ With the example Atlassian Rovo config (Jira-only whitelist):
 | | Tools | Tokens |
 |---|---|---|
 | Direct (atlassian-rovo) | 39 | ~12,500 |
-| Proxied (atlassian-proxy) | 17 | ~4,170 |
-| **Savings** | | **~67%** |
+| Proxied (atlassian-proxy) | 17 | ~3,800 |
+| **Savings** | | **~70%** |

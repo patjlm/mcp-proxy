@@ -54,3 +54,6 @@ tools:
       description: "Link two Jira issues. inwardIssue = blocker, outwardIssue = blocked."
     fetch:
       description: "Get Jira issue or Confluence page details by ARI."
+    # Strip unused parameters to save tokens
+    transitionJiraIssue:
+      disabled_parameters: [historyMetadata]

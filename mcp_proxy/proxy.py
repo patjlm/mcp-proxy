@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger("mcp-proxy-filter")
 
 import httpx
 import mcp.server.stdio
@@ -26,8 +29,40 @@ def _is_tool_allowed(name: str, tools_config: ToolsConfig) -> bool:
 
 def _apply_overrides(tool: types.Tool, tools_config: ToolsConfig) -> types.Tool:
     override = tools_config.overrides.get(tool.name)
-    if override:
-        tool = tool.model_copy(update={"description": override.description})
+    if not override:
+        return tool
+
+    updates: dict[str, Any] = {}
+    if override.description is not None:
+        updates["description"] = override.description
+
+    if override.disabled_parameters:
+        schema = dict(tool.inputSchema)
+        properties = dict(schema.get("properties", {}))
+        required = list(schema.get("required", []))
+
+        for param in override.disabled_parameters:
+            if param not in properties:
+                logger.warning(
+                    "%s: disabled_parameters lists '%s' but it does not exist in schema",
+                    tool.name,
+                    param,
+                )
+                continue
+            if param in required:
+                logger.warning(
+                    "%s: '%s' is required — skipping removal", tool.name, param
+                )
+                continue
+            del properties[param]
+
+        schema["properties"] = properties
+        if required:
+            schema["required"] = required
+        updates["inputSchema"] = schema
+
+    if updates:
+        tool = tool.model_copy(update=updates)
     return tool
 
 

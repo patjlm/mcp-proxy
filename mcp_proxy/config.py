@@ -22,7 +22,8 @@ class StdioUpstream:
 
 @dataclass
 class ToolOverride:
-    description: str
+    description: str | None = None
+    disabled_parameters: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -103,10 +104,27 @@ def _parse_tools(raw: dict | None) -> ToolsConfig:
     for tool_name, override_raw in raw_overrides.items():
         if not isinstance(override_raw, dict):
             raise ValueError(f"tools.overrides.{tool_name} must be a mapping")
+
         description = override_raw.get("description")
-        if not isinstance(description, str):
+        if description is not None and not isinstance(description, str):
             raise ValueError(f"tools.overrides.{tool_name}.description must be a string")
-        overrides[tool_name] = ToolOverride(description=description)
+
+        disabled_parameters = override_raw.get("disabled_parameters") or []
+        if not isinstance(disabled_parameters, list) or not all(
+            isinstance(p, str) for p in disabled_parameters
+        ):
+            raise ValueError(
+                f"tools.overrides.{tool_name}.disabled_parameters must be a list of strings"
+            )
+
+        if description is None and not disabled_parameters:
+            raise ValueError(
+                f"tools.overrides.{tool_name} must have at least 'description' or 'disabled_parameters'"
+            )
+
+        overrides[tool_name] = ToolOverride(
+            description=description, disabled_parameters=disabled_parameters
+        )
 
     return ToolsConfig(blacklist=blacklist, whitelist=whitelist, overrides=overrides)
 
